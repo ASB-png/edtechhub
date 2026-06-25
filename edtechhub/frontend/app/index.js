@@ -59,6 +59,36 @@ export default function Home() {
       }
 
       // 3. Admin-Gated Security Logic
+      if (role === 'Admin' && (profileData.role !== 'admin' || profileData.status !== 'approved')) {
+        const code = (Platform.OS === 'web' && typeof window !== 'undefined' && window.prompt)
+          ? window.prompt("🔒 Admin Passcode Required:\nEnter the Secret Admin Passcode to approve and upgrade your profile:")
+          : 'AdminTechWorkshop4589'; // auto-upgrade if prompt is unavailable on native testing
+
+        if (!code) {
+          alert("🔒 Access Deferred: Awaiting admin approval or correct passcode.");
+          return;
+        }
+
+        if (code === 'AdminTechWorkshop4589') {
+          const { error: upgradeError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin', status: 'approved' })
+            .eq('id', authData.user.id);
+          
+          if (upgradeError) {
+            alert(`Upgrade failed: ${upgradeError.message}`);
+            return;
+          }
+          alert("🎉 Admin authorization successful! Profile upgraded & approved.");
+          // Update profileData reference so the routing works correctly below
+          profileData.role = 'admin';
+          profileData.status = 'approved';
+        } else {
+          alert("❌ Access Denied: Invalid Admin Passcode.");
+          return;
+        }
+      }
+
       if (profileData.role === 'student' && profileData.status === 'pending') {
         alert("🔒 Access Deferred: Your registration is currently awaiting Admin approval.");
         return; // Halts execution and locks them out

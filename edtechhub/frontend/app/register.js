@@ -41,6 +41,38 @@ export default function Register() {
     });
 
     if (error) {
+      // If user already exists, and we are trying to register as Admin with the correct passcode, attempt login and upgrade
+      if (currentRole === 'Admin' && (error.message.toLowerCase().includes('already') || error.status === 422 || error.status === 400)) {
+        console.log("Admin email already exists. Attempting authentication and profile auto-approval...");
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+
+        if (signInError) {
+          alert(`Account already exists, and authentication failed: ${signInError.message}`);
+          return;
+        }
+
+        if (signInData.user) {
+          const { error: profileError } = await supabase.from('profiles').upsert({ 
+            id: signInData.user.id, 
+            name: name, 
+            roll_number: idNumber, 
+            role: 'admin', 
+            status: 'approved' 
+          });
+
+          if (profileError) {
+            alert("Authenticated, but error upgrading profile details.");
+          } else {
+            alert("Admin Account Upgraded & Auto-Approved! Redirecting...");
+            router.replace('/admin');
+          }
+          return;
+        }
+      }
+
       alert(`Error: ${error.message}`);
       return;
     }

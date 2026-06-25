@@ -102,12 +102,12 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {/* --- HEADER --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#4F46E5" />
+          <Ionicons name="chevron-back" size={28} color="#10B981" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notification Settings</Text>
         <View style={{ width: 28 }} />
@@ -265,7 +265,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#090D16' },
   
   header: {
     flexDirection: 'row',
@@ -273,12 +273,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0F172A',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#F1F5F9',
     textAlign: 'center',
     flex: 1,
   },
@@ -294,78 +296,83 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '800',
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    color: '#64748B',
+    color: '#94A3B8',
   },
 
   profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#111827',
+    borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#94A3B8',
-    shadowOpacity: 0.1,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#1F2937',
   },
 
   profileAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: '#10B981',
   },
 
   profileAvatarText: {
-    color: '#4F46E5',
-    fontWeight: 'bold',
+    color: '#10B981',
+    fontWeight: '900',
     fontSize: 18,
   },
 
   profileName: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '800',
+    color: '#F1F5F9',
     marginBottom: 2,
   },
 
   profileEmail: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#94A3B8',
   },
 
   settingRow: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#111827',
+    borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#94A3B8',
-    shadowOpacity: 0.1,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#1F2937',
   },
 
   settingLabel: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '800',
+    color: '#F1F5F9',
     marginBottom: 4,
   },
 
   settingDesc: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
+    color: '#94A3B8',
   },
 
   fadeIn: {
@@ -373,16 +380,18 @@ const styles = StyleSheet.create({
   },
 
   notifTypeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#111827',
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#94A3B8',
-    shadowOpacity: 0.1,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#1F2937',
     borderLeftWidth: 4,
-    borderLeftColor: '#4F46E5',
+    borderLeftColor: '#10B981',
   },
 
   notifTypeHeader: {
@@ -395,43 +404,48 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1E293B',
   },
 
   notifTypeName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#F1F5F9',
     marginBottom: 2,
   },
 
   notifTypeDesc: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#94A3B8',
   },
 
   infoBox: {
-    backgroundColor: '#DBEAFE',
-    borderRadius: 16,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderLeftWidth: 4,
-    borderLeftColor: '#0284C7',
+    borderLeftColor: '#38BDF8',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.15)',
   },
 
   infoTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#075985',
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#38BDF8',
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
 
   infoText: {
     fontSize: 13,
-    color: '#0C4A6E',
+    color: '#94A3B8',
     lineHeight: 18,
   },
 
@@ -440,18 +454,18 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'android' ? 20 : 30,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderTopColor: '#1E293B',
+    backgroundColor: '#0F172A',
   },
 
   saveButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#10B981',
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4F46E5',
+    shadowColor: '#10B981',
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 5,
@@ -463,7 +477,7 @@ const styles = StyleSheet.create({
 
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });
