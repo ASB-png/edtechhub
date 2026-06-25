@@ -90,12 +90,10 @@ In-App Grading Engine: Admins can review submitted links and assign a numeric gr
 🔗 Application Links
 Google Drive Link (APK / Demo Video / Presentation): 👉 [Insert Your Google Drive Link Here]
 
-👥 Team Members
-[Your Name] - [Your Role, e.g., Full-Stack Developer / UI Architect]
-
-[Teammate Name] - [Teammate Role]
-
-[Teammate Name] - [Teammate Role]
+Team Name - Friendly Fire
+Team Members:
+Atri Sekhar Banerjee
+Antaripa Sen
 
 🐛 Known Bugs & Limitations
 Push Notifications: The app currently utilizes a "pull" system. While the UI updates dynamically, native push notifications for new assignments/grades are not yet implemented (planned for V2).

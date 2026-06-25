@@ -20,18 +20,22 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.atriripa.assignhub"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router"
-    ]
-    ,
+    ],
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://wotztqshiivvkhlgpidj.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvdHp0cXNoaWl2dmtobGdwaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjczNDMsImV4cCI6MjA5Nzk0MzM0M30.fh-wborS1G-tIaq5QX758w8Po_ZfB5dd0dVVF4HuwAE"
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvdHp0cXNoaWl2dmtobGdwaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjczNDMsImV4cCI6MjA5Nzk0MzM0M30.fh-wborS1G-tIaq5QX758w8Po_ZfB5dd0dVVF4HuwAE",
+      "router": {},
+      "eas": {
+        "projectId": "ccc2997d-110c-42bc-acc0-81f55a31595b"
+      }
     }
   }
 }
