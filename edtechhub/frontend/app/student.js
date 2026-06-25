@@ -1,54 +1,169 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, Text, View, SafeAreaView, TouchableOpacity, 
-  FlatList, ActivityIndicator, Alert, Platform, StatusBar, 
-  TextInput, ScrollView, LayoutAnimation, UIManager 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  StyleSheet, Text, View, SafeAreaView, TouchableOpacity,
+  FlatList, ActivityIndicator, Platform, StatusBar,
+  TextInput, ScrollView, LayoutAnimation, UIManager, Linking, Alert
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { supabase } from '../supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { sendNotification, NOTIFICATION_TYPES, notificationTemplates } from '../notificationService';
+import { sendNotification, NOTIFICATION_TYPES } from '../notificationService';
 
-// Enable smooth animations for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+/* ─────────────────────────────────────────────
+   Countdown Timer Component
+───────────────────────────────────────────── */
+function CountdownTimer({ deadline, isCompleted }) {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [urgency, setUrgency] = useState('normal'); // 'normal' | 'warning' | 'danger' | 'expired'
+
+  useEffect(() => {
+    const calculate = () => {
+      const now = new Date();
+      const end = new Date(deadline);
+      const diff = end - now;
+
+      if (isCompleted) {
+        setTimeLeft('Submitted ✓');
+        setUrgency('done');
+        return;
+      }
+
+      if (diff <= 0) {
+        setTimeLeft('Deadline passed');
+        setUrgency('expired');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (diff < 3600000) {
+        // less than 1 hour
+        setUrgency('danger');
+        setTimeLeft(`${minutes}m ${seconds}s`);
+      } else if (diff < 86400000) {
+        // less than 1 day
+        setUrgency('warning');
+        setTimeLeft(`${hours}h ${minutes}m`);
+      } else {
+        setUrgency('normal');
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      }
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [deadline, isCompleted]);
+
+  const colors = {
+    done:    { bg: '#D1FAE5', text: '#065F46', icon: 'checkmark-circle' },
+    normal:  { bg: '#EEF2FF', text: '#4338CA', icon: 'time-outline' },
+    warning: { bg: '#FEF3C7', text: '#92400E', icon: 'alarm-outline' },
+    danger:  { bg: '#FEE2E2', text: '#991B1B', icon: 'warning-outline' },
+    expired: { bg: '#F1F5F9', text: '#64748B', icon: 'close-circle-outline' },
+  };
+  const c = colors[urgency];
+
+  return (
+    <View style={[styles.countdownBadge, { backgroundColor: c.bg }]}>
+      <Ionicons name={c.icon} size={12} color={c.text} style={{ marginRight: 4 }} />
+      <Text style={[styles.countdownText, { color: c.text }]}>{timeLeft}</Text>
+    </View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Review Feed Component (student reads feedback)
+───────────────────────────────────────────── */
+function ReviewFeed({ assignmentId, studentId }) {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReviews();
+    // Poll every 15 seconds for new reviews
+    const interval = setInterval(fetchReviews, 15000);
+    return () => clearInterval(interval);
+  }, [assignmentId, studentId]);
+
+  const fetchReviews = async () => {
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('assignment_id', assignmentId)
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: true });
+    setReviews(data || []);
+    setLoading(false);
+  };
+
+  if (loading) return <ActivityIndicator size="small" color="#4F46E5" style={{ marginTop: 8 }} />;
+
+  if (reviews.length === 0) {
+    return (
+      <View style={styles.noReviewBox}>
+        <Ionicons name="chatbubble-outline" size={16} color="#94A3B8" />
+        <Text style={styles.noReviewText}>No feedback yet from your instructor.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.reviewFeedContainer}>
+      <Text style={styles.reviewFeedTitle}>📋 Instructor Feedback</Text>
+      {reviews.map((r) => (
+        <View key={r.id} style={styles.reviewBubble}>
+          <Text style={styles.reviewText}>{r.message}</Text>
+          <Text style={styles.reviewTime}>
+            {new Date(r.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            })}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Main Student Dashboard
+───────────────────────────────────────────── */
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState('todo'); // 'todo', 'completed'
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'todo' | 'completed'
   const [profile, setProfile] = useState(null);
-  
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Submission State
+
+  // Submission state
   const [activeSubmissionId, setActiveSubmissionId] = useState(null);
   const [workLink, setWorkLink] = useState('');
   const [notes, setNotes] = useState('');
-  
-  // Notification State
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
-  const [expoPushToken, setExpoPushToken] = useState('');
 
-  // Set up notification handler
+  // Expanded review panel
+  const [expandedReviewId, setExpandedReviewId] = useState(null);
+
+  // Notification preference
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
+
   useEffect(() => {
     setupNotifications();
     loadNotificationPreferences();
+    fetchData();
   }, []);
 
   const setupNotifications = async () => {
     try {
-      // Request notification permissions
       const { status } = await Notifications.requestPermissionsAsync();
-      
-      if (status !== 'granted') {
-        console.log('Notification permission denied');
-        return;
-      }
-
-      // Set notification handler
+      if (status !== 'granted') return;
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
@@ -56,130 +171,63 @@ export default function StudentDashboard() {
           shouldSetBadge: true,
         }),
       });
-
-      // Listen for notifications
-      const subscription = Notifications.addNotificationResponseListener(response => {
-        const { assignment_id } = response.notification.request.content.data;
-        if (assignment_id) {
-          // Navigate to assignment when notification tapped
-          const assignment = assignments.find(a => a.id === assignment_id);
-          if (assignment && !assignment.isCompleted) {
-            setActiveTab('todo');
-          }
-        }
-      });
-
-      return () => subscription.remove();
-    } catch (error) {
-      console.log('Notification setup error:', error);
-    }
+    } catch (e) { console.log(e); }
   };
 
   const loadNotificationPreferences = async () => {
     try {
       const enabled = await AsyncStorage.getItem('notificationsEnabled');
       setNotificationEnabled(enabled !== 'false');
-    } catch (error) {
-      console.log('Error loading notification preferences:', error);
-    }
+    } catch (e) { console.log(e); }
   };
-
-  const sendNotification = async (title, body, assignmentId = null) => {
-    if (!notificationEnabled) return;
-
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: title,
-          body: body,
-          sound: 'default',
-          badge: 1,
-          data: {
-            assignment_id: assignmentId,
-          },
-        },
-        trigger: { seconds: 1 },
-      });
-    } catch (error) {
-      console.log('Error sending notification:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const fetchData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const { data: profileData } = await supabase
+      .from('profiles').select('*').eq('id', user.id).single();
     setProfile(profileData);
 
-    const { data: assignmentData } = await supabase.from('assignments').select('*').order('deadline', { ascending: true });
-    
-    // UPDATED: Now we are also fetching the 'grade' column from their submissions
-    const { data: submissionData } = await supabase.from('submissions').select('assignment_id, grade').eq('student_id', user.id);
-    
-    const enrichedAssignments = assignmentData.map(task => {
-      // Find the student's submission for this specific task
-      const mySubmission = submissionData?.find(sub => sub.assignment_id === task.id);
-      
-      return {
-        ...task,
-        isCompleted: !!mySubmission,
-        // NEW: Save the grade to the task if it exists
-        grade: mySubmission?.grade 
-      };
+    const { data: assignmentData } = await supabase
+      .from('assignments').select('*').order('deadline', { ascending: true });
+
+    const { data: submissionData } = await supabase
+      .from('submissions').select('assignment_id, grade').eq('student_id', user.id);
+
+    const enriched = (assignmentData || []).map(task => {
+      const mySub = submissionData?.find(s => s.assignment_id === task.id);
+      return { ...task, isCompleted: !!mySub, grade: mySub?.grade };
     });
 
-    setAssignments(enrichedAssignments || []);
+    setAssignments(enriched);
     setLoading(false);
   };
 
   const switchTab = (tab) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveTab(tab);
-    setActiveSubmissionId(null); // Close submission form if switching tabs
+    setActiveSubmissionId(null);
+    setExpandedReviewId(null);
   };
 
   const handleSubmitWork = async (assignmentId) => {
-    console.log("🚀 SEND WORK BUTTON CLICKED!");
-    console.log(`Assignment ID: ${assignmentId}`);
-    console.log(`Link: ${workLink}, Notes: ${notes}`);
-
     if (!workLink) {
-      alert("Please provide a link to your completed work."); // Using standard web alert
+      Alert.alert('Required', 'Please provide a link to your completed work.');
       return;
     }
-
-    alert("Sending... Check terminal for details!");
-
     const { data: { user } } = await supabase.auth.getUser();
-    console.log("👤 User ID submitting:", user?.id);
-
-    // .select() forces Supabase to return the data so we know it actually saved
     const { data, error } = await supabase.from('submissions').insert([
-      { 
-        assignment_id: assignmentId, 
-        student_id: user.id, 
-        file_url: workLink, 
-        notes: notes 
-      }
+      { assignment_id: assignmentId, student_id: user.id, file_url: workLink, notes }
     ]).select();
 
-    console.log("📡 SUPABASE RESPONSE:", { data, error });
-
     if (error) {
-      alert(`Submission Failed: ${error.message}`);
+      Alert.alert('Submission Failed', error.message);
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      alert("Success! 🎉 Your assignment has been submitted.");
-      
-      // Send submission confirmation notification
       const assignment = assignments.find(a => a.id === assignmentId);
-      if (assignment) {
+      if (assignment && notificationEnabled) {
         await sendNotification(
           NOTIFICATION_TYPES.SUBMISSION_CONFIRMED,
           '🎉 Submission Confirmed',
@@ -187,73 +235,135 @@ export default function StudentDashboard() {
           assignmentId
         );
       }
-      
       setActiveSubmissionId(null);
       setWorkLink('');
       setNotes('');
-      fetchData(); // Refresh the list so it moves to "Completed"
+      fetchData();
     }
   };
 
-  // Helper to get initials for the avatar
-  const getInitials = (name) => {
-    return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ST';
+  const openLink = (url) => {
+    if (!url) return;
+    const validUrl = url.startsWith('http') ? url : `https://${url}`;
+    Linking.openURL(validUrl).catch(() => Alert.alert('Invalid Link', 'Could not open URL.'));
   };
 
-  /* --- RENDER COMPONENTS --- */
+  const getInitials = (name) =>
+    name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'ST';
+
+  /* ── filtered list ── */
+  const filteredAssignments = assignments.filter(task => {
+    if (activeTab === 'todo') return !task.isCompleted;
+    if (activeTab === 'completed') return task.isCompleted;
+    return true; // 'all'
+  });
+
+  /* ── render card ── */
   const renderAssignmentCard = ({ item }) => {
     const isLate = new Date(item.deadline) < new Date() && !item.isCompleted;
+    const reviewOpen = expandedReviewId === item.id;
 
     return (
       <View style={styles.card}>
+        {/* Header row */}
         <View style={styles.cardHeader}>
           <View style={styles.assignmentTitleRow}>
-            <Ionicons name={item.isCompleted ? "checkmark-circle" : "document-text"} size={22} color={item.isCompleted ? "#10B981" : "#4F46E5"} style={{ marginRight: 8 }} />
-            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Ionicons
+              name={item.isCompleted ? 'checkmark-circle' : 'document-text'}
+              size={22}
+              color={item.isCompleted ? '#10B981' : '#4F46E5'}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
           </View>
-          
-          <View style={[styles.badge, item.isCompleted ? styles.badgeSuccess : isLate ? styles.badgeDanger : styles.badgeWarning]}>
-            <Ionicons name={item.isCompleted ? "checkmark" : isLate ? "alert-circle" : "time"} size={12} color={item.isCompleted ? "#047857" : isLate ? "#991B1B" : "#92400E"} style={{ marginRight: 4 }} />
-            <Text style={[styles.deadlineText, item.isCompleted ? styles.textSuccess : isLate ? styles.textDanger : styles.textWarning]}>
-              {item.isCompleted ? "Done" : new Date(item.deadline).toLocaleDateString()}
+          {/* Deadline badge */}
+          <View style={[styles.deadlinePill,
+            item.isCompleted ? styles.badgeSuccess :
+            isLate ? styles.badgeDanger : styles.badgeWarning]}>
+            <Text style={[styles.deadlinePillText,
+              item.isCompleted ? styles.textSuccess :
+              isLate ? styles.textDanger : styles.textWarning]}>
+              {new Date(item.deadline).toLocaleDateString()}
             </Text>
           </View>
         </View>
-        {/* --- NEW: THE GRADING DISPLAY --- */}
-        {item.isCompleted && item.grade !== undefined && item.grade !== null && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 10, marginTop: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <Ionicons name="school" size={20} color="#10B981" style={{ marginRight: 10 }} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#475569', flex: 1 }}>Instructor Score:</Text>
-            <View style={{ backgroundColor: '#D1FAE5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-              <Text style={{ color: '#065F46', fontWeight: '800', fontSize: 16 }}>{item.grade}%</Text>
+
+        {/* ── Countdown ── */}
+        <View style={{ marginBottom: 8 }}>
+          <CountdownTimer deadline={item.deadline} isCompleted={item.isCompleted} />
+        </View>
+
+        {/* Grade display */}
+        {item.isCompleted && item.grade != null && (
+          <View style={styles.gradeRow}>
+            <Ionicons name="school" size={18} color="#10B981" style={{ marginRight: 8 }} />
+            <Text style={styles.gradeLabel}>Instructor Score:</Text>
+            <View style={styles.gradePill}>
+              <Text style={styles.gradeValue}>{item.grade}%</Text>
             </View>
           </View>
         )}
 
         {item.description ? <Text style={styles.descText}>{item.description}</Text> : null}
-        
+
+        {/* Resource link */}
         {item.file_url ? (
-          <View style={styles.linkRow}>
+          <TouchableOpacity style={styles.linkRow} onPress={() => openLink(item.file_url)}>
             <Ionicons name="link" size={16} color="#4F46E5" />
             <Text style={styles.linkText}>View Instructor Resource</Text>
-          </View>
+          </TouchableOpacity>
         ) : null}
 
-        {/* Action Button & Form */}
+        {/* Review toggle (only for completed) */}
+        {item.isCompleted && profile && (
+          <TouchableOpacity
+            style={styles.reviewToggleBtn}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setExpandedReviewId(reviewOpen ? null : item.id);
+            }}
+          >
+            <Ionicons name={reviewOpen ? 'chevron-up' : 'chatbubbles-outline'} size={16} color="#4F46E5" style={{ marginRight: 6 }} />
+            <Text style={styles.reviewToggleText}>
+              {reviewOpen ? 'Hide Feedback' : 'View Instructor Feedback'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {reviewOpen && profile && (
+          <ReviewFeed assignmentId={item.id} studentId={profile.id} />
+        )}
+
+        {/* Submission form / button */}
         {!item.isCompleted && (
           activeSubmissionId === item.id ? (
             <View style={styles.submissionForm}>
               <View style={styles.inputContainer}>
                 <Ionicons name="link-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
-                <TextInput style={styles.input} placeholder="Paste link to your work (GDocs, PDF, etc.)" placeholderTextColor="#94A3B8" value={workLink} onChangeText={setWorkLink} autoCapitalize="none" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Paste link to your work"
+                  placeholderTextColor="#94A3B8"
+                  value={workLink}
+                  onChangeText={setWorkLink}
+                  autoCapitalize="none"
+                />
               </View>
               <View style={styles.inputContainer}>
                 <Ionicons name="chatbubble-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
-                <TextInput style={styles.input} placeholder="Add a note for the instructor (Optional)" placeholderTextColor="#94A3B8" value={notes} onChangeText={setNotes} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Add a note (Optional)"
+                  placeholderTextColor="#94A3B8"
+                  value={notes}
+                  onChangeText={setNotes}
+                />
               </View>
-              
               <View style={styles.formActions}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setActiveSubmissionId(null); }}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setActiveSubmissionId(null);
+                }}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.submitActionBtn} onPress={() => handleSubmitWork(item.id)}>
@@ -263,8 +373,14 @@ export default function StudentDashboard() {
               </View>
             </View>
           ) : (
-            <TouchableOpacity style={styles.openSubmitBtn} onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setActiveSubmissionId(item.id); }}>
-              <Text style={styles.openSubmitText}>Turn In Assignment</Text>
+            <TouchableOpacity style={[styles.openSubmitBtn, isLate && styles.openSubmitBtnLate]}
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setActiveSubmissionId(item.id);
+              }}>
+              <Text style={[styles.openSubmitText, isLate && styles.openSubmitTextLate]}>
+                {isLate ? '⚠️ Submit Late' : 'Turn In Assignment'}
+              </Text>
             </TouchableOpacity>
           )
         )}
@@ -272,13 +388,16 @@ export default function StudentDashboard() {
     );
   };
 
-  const filteredAssignments = assignments.filter(task => activeTab === 'todo' ? !task.isCompleted : task.isCompleted);
+  /* ── stats bar ── */
+  const total = assignments.length;
+  const done = assignments.filter(a => a.isCompleted).length;
+  const pending = total - done;
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      {/* --- HEADER --- */}
+
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
@@ -291,103 +410,274 @@ export default function StudentDashboard() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity style={styles.headerIcon} onPress={() => router.push('/settings')}>
-            <Ionicons name="settings-outline" size={24} color="#64748B" />
+            <Ionicons name="settings-outline" size={22} color="#64748B" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutIcon} onPress={async () => { await supabase.auth.signOut(); router.replace('/'); }}>
-            <Ionicons name="log-out-outline" size={24} color="#64748B" />
+          <TouchableOpacity style={styles.logoutIcon} onPress={async () => {
+            await supabase.auth.signOut(); router.replace('/');
+          }}>
+            <Ionicons name="log-out-outline" size={22} color="#64748B" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* --- PILL NAVIGATION --- */}
+      {/* Stats bar */}
+      {!loading && (
+        <View style={styles.statsBar}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>{total}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNum, { color: '#F59E0B' }]}>{pending}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNum, { color: '#10B981' }]}>{done}</Text>
+            <Text style={styles.statLabel}>Done</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNum, { color: '#4F46E5' }]}>
+              {total > 0 ? Math.round((done / total) * 100) : 0}%
+            </Text>
+            <Text style={styles.statLabel}>Progress</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Tab bar */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity style={[styles.tab, activeTab === 'todo' && styles.activeTab]} onPress={() => switchTab('todo')}>
-          <Text style={[styles.tabText, activeTab === 'todo' && styles.activeTabText]}>To Do</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'completed' && styles.activeTab]} onPress={() => switchTab('completed')}>
-          <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>Completed</Text>
-        </TouchableOpacity>
+        {[
+          { key: 'all', label: 'All', icon: 'list' },
+          { key: 'todo', label: 'To Do', icon: 'time-outline' },
+          { key: 'completed', label: 'Done', icon: 'checkmark-circle-outline' },
+        ].map(tab => (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.tab, activeTab === tab.key && styles.activeTab]}
+            onPress={() => switchTab(tab.key)}
+          >
+            <Ionicons
+              name={tab.icon}
+              size={14}
+              color={activeTab === tab.key ? '#4F46E5' : '#64748B'}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* --- MAIN CONTENT --- */}
+      {/* Content */}
       <View style={styles.content}>
-        
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{activeTab === 'todo' ? 'Pending Coursework' : 'Past Submissions'}</Text>
+          <Text style={styles.sectionTitle}>
+            {activeTab === 'all' ? 'All Assignments' :
+             activeTab === 'todo' ? 'Pending Coursework' : 'Past Submissions'}
+          </Text>
           <TouchableOpacity onPress={fetchData}>
             <Ionicons name="refresh" size={20} color="#64748B" />
           </TouchableOpacity>
         </View>
 
-        {loading ? <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 50 }} /> : 
-          filteredAssignments.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name={activeTab === 'todo' ? "partying-face" : "folder-open-outline"} size={60} color="#CBD5E1" />
-              <Text style={styles.emptyTitle}>{activeTab === 'todo' ? 'You are all caught up!' : 'No completed work yet.'}</Text>
-              <Text style={styles.emptySub}>{activeTab === 'todo' ? 'Check back later for new assignments.' : 'Your submitted assignments will appear here.'}</Text>
-            </View>
-          ) : <FlatList data={filteredAssignments} keyExtractor={(i) => i.id} renderItem={renderAssignmentCard} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}/>
-        }
-
+        {loading ? (
+          <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 50 }} />
+        ) : filteredAssignments.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name={activeTab === 'todo' ? 'happy-outline' : 'folder-open-outline'} size={60} color="#CBD5E1" />
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'todo' ? 'All caught up!' :
+               activeTab === 'completed' ? 'No completed work yet.' : 'No assignments yet.'}
+            </Text>
+            <Text style={styles.emptySub}>
+              {activeTab === 'todo' ? 'Check back later for new assignments.' :
+               activeTab === 'completed' ? 'Your submitted assignments will appear here.' :
+               'Assignments posted by your instructor will show here.'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredAssignments}
+            keyExtractor={i => i.id}
+            renderItem={renderAssignmentCard}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
-// PREMIUM STYLING
+/* ─────────────────────────────────────────────
+   Styles
+───────────────────────────────────────────── */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: Platform.OS === 'android' ? 60 : 20, paddingBottom: 20, backgroundColor: '#F8FAFC' },
+
+  /* Header */
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 60 : 20,
+    paddingBottom: 16,
+    backgroundColor: '#F8FAFC',
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 15, shadowColor: '#4F46E5', shadowOpacity: 0.1, shadowRadius: 10, elevation: 2 },
-  avatarText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 18 },
-  title: { fontSize: 24, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: '#64748B', marginTop: 2, fontWeight: '600' },
-  headerIcon: { padding: 10, backgroundColor: '#FFFFFF', borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  logoutIcon: { padding: 10, backgroundColor: '#FFFFFF', borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  
+  avatar: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
+    elevation: 2,
+  },
+  avatarText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 16 },
+  title: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+  subtitle: { fontSize: 13, color: '#64748B', marginTop: 2, fontWeight: '600' },
+  headerIcon: { padding: 8, backgroundColor: '#FFFFFF', borderRadius: 12, elevation: 2 },
+  logoutIcon: { padding: 8, backgroundColor: '#FFFFFF', borderRadius: 12, elevation: 2 },
+
+  /* Stats */
+  statsBar: {
+    flexDirection: 'row', backgroundColor: '#FFFFFF',
+    marginHorizontal: 20, borderRadius: 16, padding: 14, marginBottom: 10,
+    elevation: 2, alignItems: 'center',
+  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statNum: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
+  statLabel: { fontSize: 11, color: '#64748B', marginTop: 2 },
+  statDivider: { width: 1, height: 36, backgroundColor: '#E2E8F0' },
+
+  /* Tabs */
   tabContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 10 },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 100, marginHorizontal: 4 },
-  activeTab: { backgroundColor: '#EEF2FF' }, 
-  tabText: { color: '#64748B', fontWeight: '600', fontSize: 14 },
-  activeTabText: { color: '#4F46E5', fontWeight: '700' }, 
-  
-  content: { flex: 1, paddingHorizontal: 24 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 10 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#0F172A' },
-  
-  card: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: '#94A3B8', shadowOpacity: 0.1, shadowRadius: 15, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  assignmentTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: '#0F172A', marginBottom: 4, flexShrink: 1 },
-  
-  badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
+  tab: {
+    flex: 1, paddingVertical: 10, alignItems: 'center',
+    borderRadius: 100, marginHorizontal: 3, flexDirection: 'row', justifyContent: 'center',
+  },
+  activeTab: { backgroundColor: '#EEF2FF' },
+  tabText: { color: '#64748B', fontWeight: '600', fontSize: 13 },
+  activeTabText: { color: '#4F46E5', fontWeight: '700' },
+
+  /* Content */
+  content: { flex: 1, paddingHorizontal: 20 },
+  sectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 16, marginTop: 4,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+
+  /* Card */
+  card: {
+    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 18, marginBottom: 14,
+    shadowColor: '#94A3B8', shadowOpacity: 0.08, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: 8,
+  },
+  assignmentTitleRow: { flexDirection: 'row', alignItems: 'flex-start', flex: 1, paddingRight: 8 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1 },
+
+  /* Deadline pill */
+  deadlinePill: {
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center',
+  },
   badgeWarning: { backgroundColor: '#FEF3C7' },
-  badgeDanger: { backgroundColor: '#FEE2E2' },
+  badgeDanger:  { backgroundColor: '#FEE2E2' },
   badgeSuccess: { backgroundColor: '#D1FAE5' },
-  deadlineText: { fontSize: 12, fontWeight: '700' },
+  deadlinePillText: { fontSize: 11, fontWeight: '700' },
   textWarning: { color: '#92400E' },
-  textDanger: { color: '#991B1B' },
+  textDanger:  { color: '#991B1B' },
   textSuccess: { color: '#065F46' },
-  
-  descText: { fontSize: 15, color: '#475569', lineHeight: 24, marginBottom: 16 },
-  linkRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 10, marginBottom: 10 },
-  linkText: { fontSize: 14, color: '#4F46E5', fontWeight: '600', marginLeft: 8 },
-  
-  openSubmitBtn: { backgroundColor: '#F1F5F9', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 8 },
+
+  /* Countdown */
+  countdownBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20,
+  },
+  countdownText: { fontSize: 12, fontWeight: '700' },
+
+  /* Grade */
+  gradeRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F0FDF4', padding: 10, borderRadius: 10, marginBottom: 8,
+    borderWidth: 1, borderColor: '#BBF7D0',
+  },
+  gradeLabel: { fontSize: 14, fontWeight: '600', color: '#475569', flex: 1 },
+  gradePill: {
+    backgroundColor: '#D1FAE5', paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: 8, borderWidth: 1, borderColor: '#A7F3D0',
+  },
+  gradeValue: { color: '#065F46', fontWeight: '800', fontSize: 15 },
+
+  descText: { fontSize: 14, color: '#475569', lineHeight: 22, marginBottom: 12, marginTop: 4 },
+
+  linkRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, marginBottom: 10,
+  },
+  linkText: { fontSize: 13, color: '#4F46E5', fontWeight: '600', marginLeft: 8 },
+
+  /* Review toggle */
+  reviewToggleBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#EEF2FF', padding: 10, borderRadius: 10, marginTop: 8,
+  },
+  reviewToggleText: { color: '#4F46E5', fontWeight: '700', fontSize: 13 },
+
+  /* Review feed */
+  reviewFeedContainer: { marginTop: 12 },
+  reviewFeedTitle: { fontSize: 13, fontWeight: '700', color: '#475569', marginBottom: 8 },
+  reviewBubble: {
+    backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 8,
+    borderLeftWidth: 3, borderLeftColor: '#4F46E5',
+  },
+  reviewText: { fontSize: 14, color: '#1E293B', lineHeight: 20 },
+  reviewTime: { fontSize: 11, color: '#94A3B8', marginTop: 6, textAlign: 'right' },
+  noReviewBox: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F1F5F9', padding: 10, borderRadius: 10, marginTop: 8,
+  },
+  noReviewText: { fontSize: 13, color: '#94A3B8', marginLeft: 8 },
+
+  /* Submission */
+  openSubmitBtn: {
+    backgroundColor: '#F1F5F9', paddingVertical: 12,
+    borderRadius: 12, alignItems: 'center', marginTop: 10,
+  },
+  openSubmitBtnLate: { backgroundColor: '#FEF3C7' },
   openSubmitText: { color: '#0F172A', fontWeight: '700', fontSize: 14 },
-  
-  submissionForm: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 16, marginTop: 10, borderWidth: 1, borderColor: '#E2E8F0' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, marginBottom: 10 },
+  openSubmitTextLate: { color: '#92400E' },
+  submissionForm: {
+    backgroundColor: '#F8FAFC', padding: 14, borderRadius: 14,
+    marginTop: 10, borderWidth: 1, borderColor: '#E2E8F0',
+  },
+  inputContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 12, marginBottom: 10,
+  },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, paddingVertical: 12, fontSize: 14, color: '#0F172A' },
-  formActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 5 },
+  formActions: {
+    flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 4,
+  },
   cancelBtn: { paddingHorizontal: 15, paddingVertical: 10 },
   cancelText: { color: '#64748B', fontWeight: '600' },
-  submitActionBtn: { flexDirection: 'row', backgroundColor: '#4F46E5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  submitActionBtn: {
+    flexDirection: 'row', backgroundColor: '#4F46E5',
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
+  },
   submitActionText: { color: '#FFFFFF', fontWeight: '700' },
 
+  /* Empty */
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 60 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginTop: 16, marginBottom: 8 },
-  emptySub: { fontSize: 15, color: '#64748B', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginTop: 16, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#64748B', textAlign: 'center', paddingHorizontal: 20 },
 });

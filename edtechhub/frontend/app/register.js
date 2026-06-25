@@ -64,7 +64,7 @@ export default function Register() {
         } else {
           alert("Application submitted successfully! Waiting for Admin approval.");
         }
-        router.back();
+        router.replace('/');
       }
     }
   };
@@ -109,7 +109,7 @@ export default function Register() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.replace('/')} style={styles.backButton}>
           <Text style={styles.backText}>← Back to Login Portal</Text>
         </TouchableOpacity>
 
