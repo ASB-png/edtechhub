@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, Text, View, SafeAreaView, TouchableOpacity,
   FlatList, ActivityIndicator, Platform, StatusBar,
-  TextInput, ScrollView, LayoutAnimation, UIManager, Linking, Alert,
-  Image, Dimensions
+  TextInput, ScrollView, LayoutAnimation, UIManager, Linking, Alert
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -395,14 +394,8 @@ export default function StudentDashboard() {
   const pending = total - done;
 
   return (
-    <View style={{ flex: 1 }}>
-      <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=2073&auto=format&fit=crop' }}
-        style={styles.backgroundImage}
-      />
-      <View style={styles.overlay} />
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -516,8 +509,7 @@ export default function StudentDashboard() {
           />
         )}
       </View>
-      </SafeAreaView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -525,9 +517,7 @@ export default function StudentDashboard() {
    Styles
 ───────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  backgroundImage: { position: 'absolute', width: '100%', height: '100%', resizeMode: 'cover' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(241, 245, 249, 0.65)' }, // light slate glass tint
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   /* Header */
   header: {
@@ -535,55 +525,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'android' ? 60 : 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: '#F8FAFC',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: '#EEF2FF',
     justifyContent: 'center', alignItems: 'center', marginRight: 14,
-    borderWidth: 1.5, borderColor: '#A5B4FC',
+    elevation: 2,
   },
-  avatarText: { color: '#4F46E5', fontWeight: '950', fontSize: 16 },
-  title: { fontSize: 20, fontWeight: '800', color: '#1E293B', letterSpacing: -0.5 },
+  avatarText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 16 },
+  title: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
   subtitle: { fontSize: 13, color: '#64748B', marginTop: 2, fontWeight: '600' },
-  headerIcon: { padding: 8, backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)' },
-  logoutIcon: { padding: 8, backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)' },
+  headerIcon: { padding: 8, backgroundColor: '#FFFFFF', borderRadius: 12, elevation: 2 },
+  logoutIcon: { padding: 8, backgroundColor: '#FFFFFF', borderRadius: 12, elevation: 2 },
 
   /* Stats */
   statsBar: {
-    flexDirection: 'row', backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    marginHorizontal: 20, borderRadius: 18, padding: 14, marginBottom: 12,
-    marginTop: 14,
-    elevation: 3, alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)',
-    shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }
+    flexDirection: 'row', backgroundColor: '#FFFFFF',
+    marginHorizontal: 20, borderRadius: 16, padding: 14, marginBottom: 10,
+    elevation: 2, alignItems: 'center',
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
-  statLabel: { fontSize: 11, color: '#64748B', marginTop: 2, fontWeight: '750', textTransform: 'uppercase' },
-  statDivider: { width: 1, height: 36, backgroundColor: 'rgba(0,0,0,0.06)' },
+  statNum: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
+  statLabel: { fontSize: 11, color: '#64748B', marginTop: 2 },
+  statDivider: { width: 1, height: 36, backgroundColor: '#E2E8F0' },
 
   /* Tabs */
-  tabContainer: { 
-    flexDirection: 'row', 
-    paddingHorizontal: 6, 
-    marginBottom: 10, 
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', 
-    borderRadius: 14, 
-    padding: 6, 
-    marginHorizontal: 20, 
-    borderWidth: 1, 
-    borderColor: 'rgba(255, 255, 255, 0.4)' 
-  },
+  tabContainer: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 10 },
   tab: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
-    borderRadius: 10, marginHorizontal: 2, flexDirection: 'row', justifyContent: 'center',
+    borderRadius: 100, marginHorizontal: 3, flexDirection: 'row', justifyContent: 'center',
   },
-  activeTab: { backgroundColor: '#4F46E5', shadowColor: '#4F46E5', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
-  tabText: { color: '#64748B', fontWeight: '700', fontSize: 13 },
-  activeTabText: { color: '#FFFFFF', fontWeight: '800' },
+  activeTab: { backgroundColor: '#EEF2FF' },
+  tabText: { color: '#64748B', fontWeight: '600', fontSize: 13 },
+  activeTabText: { color: '#4F46E5', fontWeight: '700' },
 
   /* Content */
   content: { flex: 1, paddingHorizontal: 20 },
@@ -591,33 +567,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 16, marginTop: 4,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
 
   /* Card */
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', borderRadius: 20, padding: 18, marginBottom: 14,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10,
+    backgroundColor: '#FFFFFF', borderRadius: 20, padding: 18, marginBottom: 14,
+    shadowColor: '#94A3B8', shadowOpacity: 0.08, shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 }, elevation: 3,
-    borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   cardHeader: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'flex-start', marginBottom: 8,
   },
   assignmentTitleRow: { flexDirection: 'row', alignItems: 'flex-start', flex: 1, paddingRight: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B', flex: 1 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1 },
 
   /* Deadline pill */
   deadlinePill: {
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 100,
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center',
   },
-  badgeWarning: { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' },
-  badgeDanger:  { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
-  badgeSuccess: { backgroundColor: '#D1FAE5', borderColor: '#A7F3D0' },
-  deadlinePillText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  textWarning: { color: '#B45309' },
-  textDanger:  { color: '#B91C1C' },
+  badgeWarning: { backgroundColor: '#FEF3C7' },
+  badgeDanger:  { backgroundColor: '#FEE2E2' },
+  badgeSuccess: { backgroundColor: '#D1FAE5' },
+  deadlinePillText: { fontSize: 11, fontWeight: '700' },
+  textWarning: { color: '#92400E' },
+  textDanger:  { color: '#991B1B' },
   textSuccess: { color: '#065F46' },
 
   /* Countdown */
@@ -626,87 +601,83 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 20,
   },
-  countdownText: { fontSize: 11, fontWeight: '800' },
+  countdownText: { fontSize: 12, fontWeight: '700' },
 
   /* Grade */
   gradeRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#ECFDF5', padding: 10, borderRadius: 10, marginBottom: 8,
-    borderWidth: 1, borderColor: '#A7F3D0',
+    backgroundColor: '#F0FDF4', padding: 10, borderRadius: 10, marginBottom: 8,
+    borderWidth: 1, borderColor: '#BBF7D0',
   },
-  gradeLabel: { fontSize: 13, fontWeight: '700', color: '#047857', flex: 1 },
+  gradeLabel: { fontSize: 14, fontWeight: '600', color: '#475569', flex: 1 },
   gradePill: {
     backgroundColor: '#D1FAE5', paddingHorizontal: 12, paddingVertical: 5,
     borderRadius: 8, borderWidth: 1, borderColor: '#A7F3D0',
   },
-  gradeValue: { color: '#065F46', fontWeight: '950', fontSize: 14 },
+  gradeValue: { color: '#065F46', fontWeight: '800', fontSize: 15 },
 
-  descText: { fontSize: 13, color: '#475569', lineHeight: 20, marginBottom: 12, marginTop: 4 },
+  descText: { fontSize: 14, color: '#475569', lineHeight: 22, marginBottom: 12, marginTop: 4 },
 
   linkRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E2E8F0',
   },
-  linkText: { fontSize: 12, color: '#4F46E5', fontWeight: '700', marginLeft: 8 },
+  linkText: { fontSize: 13, color: '#4F46E5', fontWeight: '600', marginLeft: 8 },
 
   /* Review toggle */
   reviewToggleBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F3E8FF', padding: 10, borderRadius: 10, marginTop: 8,
-    borderWidth: 1, borderColor: '#E9D5FF',
+    backgroundColor: '#EEF2FF', padding: 10, borderRadius: 10, marginTop: 8,
   },
-  reviewToggleText: { color: '#7C3AED', fontWeight: '800', fontSize: 12 },
+  reviewToggleText: { color: '#4F46E5', fontWeight: '700', fontSize: 13 },
 
   /* Review feed */
   reviewFeedContainer: { marginTop: 12 },
-  reviewFeedTitle: { fontSize: 12, fontWeight: '800', color: '#64748B', marginBottom: 8, textTransform: 'uppercase' },
+  reviewFeedTitle: { fontSize: 13, fontWeight: '700', color: '#475569', marginBottom: 8 },
   reviewBubble: {
-    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 8,
-    borderLeftWidth: 3, borderLeftColor: '#7C3AED', borderWidth: 1, borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC', borderRadius: 12, padding: 12, marginBottom: 8,
+    borderLeftWidth: 3, borderLeftColor: '#4F46E5',
   },
-  reviewText: { fontSize: 13, color: '#334155', lineHeight: 18 },
-  reviewTime: { fontSize: 10, color: '#94A3B8', marginTop: 6, textAlign: 'right' },
+  reviewText: { fontSize: 14, color: '#1E293B', lineHeight: 20 },
+  reviewTime: { fontSize: 11, color: '#94A3B8', marginTop: 6, textAlign: 'right' },
   noReviewBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8FAFC', padding: 10, borderRadius: 10, marginTop: 8,
-    borderWidth: 1, borderColor: '#E2E8F0',
+    backgroundColor: '#F1F5F9', padding: 10, borderRadius: 10, marginTop: 8,
   },
-  noReviewText: { fontSize: 12, color: '#94A3B8', marginLeft: 8 },
+  noReviewText: { fontSize: 13, color: '#94A3B8', marginLeft: 8 },
 
   /* Submission */
   openSubmitBtn: {
-    backgroundColor: '#FFFFFF', paddingVertical: 12,
+    backgroundColor: '#F1F5F9', paddingVertical: 12,
     borderRadius: 12, alignItems: 'center', marginTop: 10,
-    borderWidth: 1, borderColor: '#E2E8F0',
   },
-  openSubmitBtnLate: { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' },
-  openSubmitText: { color: '#1E293B', fontWeight: '800', fontSize: 13 },
-  openSubmitTextLate: { color: '#B45309' },
+  openSubmitBtnLate: { backgroundColor: '#FEF3C7' },
+  openSubmitText: { color: '#0F172A', fontWeight: '700', fontSize: 14 },
+  openSubmitTextLate: { color: '#92400E' },
   submissionForm: {
-    backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14,
+    backgroundColor: '#F8FAFC', padding: 14, borderRadius: 14,
     marginTop: 10, borderWidth: 1, borderColor: '#E2E8F0',
   },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0',
     borderRadius: 10, paddingHorizontal: 12, marginBottom: 10,
   },
   inputIcon: { marginRight: 8 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 13, color: '#1E293B' },
+  input: { flex: 1, paddingVertical: 12, fontSize: 14, color: '#0F172A' },
   formActions: {
     flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 4,
   },
   cancelBtn: { paddingHorizontal: 15, paddingVertical: 10 },
-  cancelText: { color: '#64748B', fontWeight: '700', fontSize: 13 },
+  cancelText: { color: '#64748B', fontWeight: '600' },
   submitActionBtn: {
-    flexDirection: 'row', backgroundColor: '#10B981',
+    flexDirection: 'row', backgroundColor: '#4F46E5',
     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
   },
-  submitActionText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
+  submitActionText: { color: '#FFFFFF', fontWeight: '700' },
 
   /* Empty */
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginTop: 16, marginBottom: 8 },
-  emptySub: { fontSize: 13, color: '#94A3B8', textAlign: 'center', paddingHorizontal: 20 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginTop: 16, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#64748B', textAlign: 'center', paddingHorizontal: 20 },
 });
