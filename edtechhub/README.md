@@ -19,7 +19,7 @@ UI/UX: React Native StyleSheet, LayoutAnimation (for native smooth transitions),
 
 Bash
 
-git clone https://github.com/yourusername/AssignHub.git
+git clone [https://github.com/ASB-png/edtechhub.git]
 cd AssignHub
 2. Install Dependencies
 
