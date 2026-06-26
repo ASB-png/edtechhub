@@ -88,7 +88,7 @@ Real-Time Analytics Tracker: Admins can click into any assignment to view a dyna
 In-App Grading Engine: Admins can review submitted links and assign a numeric grade (0-100%) that instantly reflects on the student's dashboard.
 
 🔗 Application Links
-Google Drive Link (APK / Demo Video / Presentation): 👉 [Insert Your Google Drive Link Here]
+Google Drive Link (APK / Demo Video / Presentation): 👉 (https://drive.google.com/file/d/1E3Glt8YGlRLP1-V1uShdJrQoA3OIraQ-/view?usp=drive_link)
 
 Team Name - Friendly Fire
 Team Members:
